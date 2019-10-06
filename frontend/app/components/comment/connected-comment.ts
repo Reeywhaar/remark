@@ -7,7 +7,7 @@ import './styles';
 
 import { Comment as CommentType } from '@app/common/types';
 
-import { connect } from 'preact-redux';
+import { connect, ConnectedComponent } from 'react-redux';
 
 import { StoreState } from '@app/store';
 import {
@@ -26,20 +26,23 @@ import { getCommentMode } from '@app/store/comments/getters';
 import { uploadImage, getPreview } from '@app/common/api';
 import { getThreadIsCollapsed } from '@app/store/thread/getters';
 import { bindActions } from '@app/utils/actionBinder';
+import { ClassAttributes } from 'react';
+
+type ProvidedProps = Pick<
+  Props,
+  | 'editMode'
+  | 'user'
+  | 'isUserBanned'
+  | 'post_info'
+  | 'isCommentsDisabled'
+  | 'theme'
+  | 'collapsed'
+  | 'getPreview'
+  | 'uploadImage'
+>;
 
 const mapStateToProps = (state: StoreState, cprops: { data: CommentType }) => {
-  const props: Pick<
-    Props,
-    | 'editMode'
-    | 'user'
-    | 'isUserBanned'
-    | 'post_info'
-    | 'isCommentsDisabled'
-    | 'theme'
-    | 'collapsed'
-    | 'getPreview'
-    | 'uploadImage'
-  > = {
+  const props: ProvidedProps = {
     editMode: getCommentMode(state, cprops.data.id),
     user: state.user,
     isUserBanned: cprops.data.user.block || state.bannedUsers.find(u => u.id === cprops.data.user.id) !== undefined,
@@ -70,5 +73,10 @@ export const boundActions = bindActions({
 /** Comment component connected to redux */
 export const ConnectedComment = connect(
   mapStateToProps,
-  boundActions as Partial<typeof boundActions>
-)(Comment);
+  boundActions,
+  null,
+  { forwardRef: true }
+)(Comment) as ConnectedComponent<
+  typeof Comment,
+  Omit<Props, keyof (ProvidedProps & typeof boundActions)> & ClassAttributes<Comment>
+>;

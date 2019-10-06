@@ -1,15 +1,21 @@
-/** @jsx h */
-import { AnyComponent } from 'preact';
-import { connect } from 'preact-redux';
+/** @jsx createElement */
+import { ComponentType } from 'react';
+import { connect, ConnectedComponent } from 'react-redux';
 import { StoreState } from '@app/store';
 import { Theme } from '@app/common/types';
+
+const themeProvider = (state: StoreState) => ({ theme: state.theme });
 
 /**
  * Connects redux theme property to component's
  */
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-function withTheme<P extends { theme: Theme }, S extends object>(PlainComponent: AnyComponent<P, S>) {
-  return connect((state: StoreState) => ({ theme: state.theme }))(PlainComponent);
+function withTheme<P extends { theme: Theme }>(
+  PlainComponent: ComponentType<P>
+): ConnectedComponent<ComponentType<P>, Omit<P, 'theme'>> {
+  return connect(
+    themeProvider,
+    {}
+  )(PlainComponent as any);
 }
 
 export default withTheme;

@@ -1,5 +1,5 @@
-/** @jsx h */
-import { Component, h, RenderableProps } from 'preact';
+/** @jsx createElement */
+import { createElement, Component } from 'react';
 import b from 'bem-react-helper';
 
 import { Button } from '@app/components/button';
@@ -24,7 +24,7 @@ interface State {
 }
 
 export default class Dropdown extends Component<Props, State> {
-  rootNode?: HTMLDivElement;
+  rootNode: HTMLDivElement | null = null;
 
   constructor(props: Props) {
     super(props);
@@ -176,11 +176,12 @@ export default class Dropdown extends Component<Props, State> {
     window.removeEventListener('message', this.receiveMessage);
   }
 
-  render(props: RenderableProps<Props>, { isActive }: State) {
-    const { title, titleClass, heading, children, mix } = props;
+  render() {
+    const { title, titleClass, heading, children, mix, theme } = this.props;
+    const { isActive } = this.state;
 
     return (
-      <div className={b('dropdown', { mix }, { theme: props.theme, active: isActive })} ref={r => (this.rootNode = r)}>
+      <div className={b('dropdown', { mix }, { theme: theme, active: isActive })} ref={r => (this.rootNode = r)}>
         <Button
           aria-haspopup="listbox"
           aria-expanded={isActive && 'true'}

@@ -1,8 +1,9 @@
-import { Component } from 'preact';
+import { Component } from 'react';
+import { findDOMNode } from 'react-dom';
 import { sleep } from '@app/utils/sleep';
 
 interface Props {
-  children: (props: { inView: boolean; ref: (ref: Component) => Component }) => JSX.Element;
+  children: (props: { inView: boolean; ref: (ref: Component) => unknown }) => JSX.Element;
 }
 
 interface State {
@@ -49,10 +50,10 @@ export class InView extends Component<Props, State> {
 
   refSetter = async (ref: Component | null) => {
     await sleep(1);
-    const el = ref ? ref.base : undefined;
+    const el = ref ? findDOMNode(ref) : undefined;
     if (el === this.state.ref) return;
     this.setState({
-      ref: ref ? ref.base : undefined,
+      ref: ((el || undefined) as unknown) as Element,
     });
   };
 
@@ -65,8 +66,7 @@ export class InView extends Component<Props, State> {
 
   render() {
     const props = { inView: this.state.inView, ref: this.refSetter };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const r = (this.props.children as any)[0](props);
+    const r = this.props.children(props);
     return r;
   }
 }

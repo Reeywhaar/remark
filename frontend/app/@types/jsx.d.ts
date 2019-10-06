@@ -1,10 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 declare namespace JSX {
   interface IntrinsicElements {
     'markdown-toolbar': {
       for: string;
+      class?: string;
       children?: any;
-      className: string;
     };
     'md-bold': any;
     'md-header': any;

@@ -1,6 +1,6 @@
-/** @jsx h */
-import { h, Component, RenderableProps } from 'preact';
-import { connect } from 'preact-redux';
+/** @jsx createElement */
+import { createElement, Component } from 'react';
+import { connect } from 'react-redux';
 import b from 'bem-react-helper';
 
 import { User, Sorting, AuthProvider } from '@app/common/types';
@@ -201,7 +201,10 @@ export class Root extends Component<Props, State> {
     return isUserAnonymous(this.props.user);
   }
 
-  render(props: RenderableProps<Props>, { isLoaded, isCommentsListLoading, commentsShown }: State) {
+  render() {
+    const props = this.props;
+    const { isLoaded, isCommentsListLoading, commentsShown } = this.state;
+
     if (!isLoaded) {
       return (
         <div id={NODE_ID}>

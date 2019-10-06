@@ -1,5 +1,5 @@
-/** @jsx h */
-import { h, Component, RenderableProps } from 'preact';
+/** @jsx createElement */
+import { createElement, Component, createRef, MouseEvent, KeyboardEvent } from 'react';
 import b from 'bem-react-helper';
 
 import { PROVIDER_NAMES, IS_STORAGE_AVAILABLE, IS_THIRD_PARTY } from '@app/common/constants';
@@ -11,7 +11,7 @@ import Dropdown, { DropdownItem } from '@app/components/dropdown';
 import { Button } from '@app/components/button';
 import { UserID } from './__user-id';
 import { AnonymousLoginForm } from './__anonymous-login-form';
-import { EmailLoginForm, EmailLoginFormConnected } from './__email-login-form';
+import { EmailLoginFormConnected, EmailLoginForm } from './__email-login-form';
 import { StoreState } from '@app/store';
 import { ProviderState } from '@app/store/provider/reducers';
 import debounce from '@app/utils/debounce';
@@ -44,7 +44,7 @@ interface State {
 }
 
 export class AuthPanel extends Component<Props, State> {
-  emailLoginRef?: EmailLoginForm;
+  emailLoginRef = createRef<EmailLoginForm>();
 
   constructor(props: Props) {
     super(props);
@@ -65,9 +65,7 @@ export class AuthPanel extends Component<Props, State> {
     this.handleOAuthLogin = this.handleOAuthLogin.bind(this);
     this.toggleUserInfoVisibility = this.toggleUserInfoVisibility.bind(this);
     this.onEmailTitleClick = this.onEmailTitleClick.bind(this);
-  }
 
-  componentWillMount() {
     this.resizeHandler();
     window.addEventListener('resize', this.resizeHandler);
   }
@@ -85,12 +83,12 @@ export class AuthPanel extends Component<Props, State> {
   }, 100);
 
   onEmailTitleClick() {
-    this.emailLoginRef && this.emailLoginRef.focus();
+    this.emailLoginRef.current && this.emailLoginRef.current.focus();
   }
 
-  onSortChange(e: Event) {
+  onSortChange(e: { target: EventTarget }) {
     if (this.props.onSortChange) {
-      this.props.onSortChange((e.target! as HTMLOptionElement).value as Sorting);
+      this.props.onSortChange((e.target! as HTMLSelectElement).value as Sorting);
     }
   }
 
@@ -98,7 +96,7 @@ export class AuthPanel extends Component<Props, State> {
     this.setState({ sortSelectFocused: true });
   };
 
-  onSortBlur = (e: Event) => {
+  onSortBlur = (e: { target: EventTarget }) => {
     this.setState({ sortSelectFocused: false });
 
     this.onSortChange(e);
@@ -208,7 +206,7 @@ export class AuthPanel extends Component<Props, State> {
         >
           <DropdownItem>
             <EmailLoginFormConnected
-              ref={ref => (this.emailLoginRef = ref ? ref.getWrappedInstance() : null)}
+              ref={this.emailLoginRef}
               onSignIn={this.onEmailSignIn}
               theme={this.props.theme}
               className="auth-panel__email-login-form"
@@ -272,7 +270,7 @@ export class AuthPanel extends Component<Props, State> {
             const comma = i === 0 ? '' : i === sortedProviders.length - 1 ? ' or ' : ', ';
 
             return (
-              <span>
+              <span key={`provider-${provider}`}>
                 {comma}
                 {this.renderProvider(provider)}
               </span>
@@ -305,7 +303,7 @@ export class AuthPanel extends Component<Props, State> {
       <div className="auth-panel__column">
         Disable third-party cookies blocking to sign in or open comments in{' '}
         <a
-          class="auth-panel__pseudo-link"
+          className="auth-panel__pseudo-link"
           href={`${window.location.origin}/web/comments.html${window.location.search}`}
           target="_blank"
         >
@@ -349,6 +347,7 @@ export class AuthPanel extends Component<Props, State> {
     const { sort } = this.props;
     const { sortSelectFocused } = this.state;
     const sortArray = getSortArray(sort);
+    const selected = sortArray.find(i => !!i.selected);
     return (
       <span className="auth-panel__sort">
         Sort by{' '}
@@ -361,9 +360,10 @@ export class AuthPanel extends Component<Props, State> {
             onChange={this.onSortChange}
             onFocus={this.onSortFocus}
             onBlur={this.onSortBlur}
+            value={selected!.value}
           >
             {sortArray.map(sort => (
-              <option value={sort.value} selected={sort.selected}>
+              <option value={sort.value} key={`sort-${sort.label}`}>
                 {sort.label}
               </option>
             ))}
@@ -373,12 +373,13 @@ export class AuthPanel extends Component<Props, State> {
     );
   };
 
-  render(props: RenderableProps<Props>, { isBlockedVisible }: State) {
+  render() {
     const {
       user,
       postInfo: { read_only },
       theme,
-    } = props;
+    } = this.props;
+    const { isBlockedVisible } = this.state;
     const isAdmin = user && user.admin;
     const isSettingsLabelVisible = Object.keys(this.props.hiddenUsers).length > 0 || isAdmin || isBlockedVisible;
 

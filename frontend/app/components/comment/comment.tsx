@@ -1,8 +1,8 @@
-/** @jsx h */
+/** @jsx createElement */
 
 import './styles';
 
-import { h, Component, RenderableProps } from 'preact';
+import { createElement, Component, BaseSyntheticEvent, createRef } from 'react';
 import b from 'bem-react-helper';
 
 import { getHandleClickProps } from '@app/common/accessibility';
@@ -70,9 +70,10 @@ export interface State {
 }
 
 export class Comment extends Component<Props, State> {
-  votingPromise: Promise<unknown>;
+  votingPromise: Promise<unknown> = Promise.resolve();
+  rootNode = createRef<HTMLElement>();
   /** comment text node. Used in comment text copying */
-  textNode?: HTMLDivElement;
+  textNode = createRef<HTMLDivElement>();
 
   constructor(props: Props) {
     super(props);
@@ -86,31 +87,28 @@ export class Comment extends Component<Props, State> {
       initial: true,
     };
 
-    this.votingPromise = Promise.resolve();
-
-    this.updateState(props);
+    this.updateState(props, state => {
+      this.state = { ...this.state, ...state };
+    });
 
     this.toggleEditing = this.toggleEditing.bind(this);
     this.toggleReplying = this.toggleReplying.bind(this);
     this.blockUser = debounce(this.blockUser, 100).bind(this);
   }
 
-  // getHandleClickProps = (handler?: (e: KeyboardEvent | MouseEvent) => void) => {
-  //   if (this.state.initial) return null;
-  //   if (this.props.inView === false) return null;
-  //   return getHandleClickProps(handler);
-  // };
-
-  componentWillReceiveProps(nextProps: Props) {
-    this.updateState(nextProps);
+  // TODO: refactor
+  UNSAFE_componentWillReceiveProps(nextProps: Props) {
+    this.updateState(nextProps, state => {
+      this.setState(state as any);
+    });
   }
 
   componentDidMount() {
     this.setState({ initial: false });
   }
 
-  updateState = (props: Props) => {
-    this.setState({
+  updateState = (props: Props, setState: (state: Partial<State>) => unknown) => {
+    setState({
       scoreDelta: props.data.vote,
       cachedScore: props.data.score,
     });
@@ -124,7 +122,7 @@ export class Comment extends Component<Props, State> {
         const timeDiff = StaticStore.serverClientTimeDiff || 0;
         let editDeadline: Date | null = new Date(new Date(props.data.time).getTime() + timeDiff + editDuration * 1000);
         if (editDeadline < new Date()) editDeadline = null;
-        this.setState({
+        setState({
           editDeadline,
         });
       }
@@ -176,7 +174,7 @@ export class Comment extends Component<Props, State> {
     }
   };
 
-  onBlockUserClick = (e: Event) => {
+  onBlockUserClick = (e: { type: string; target: EventTarget }) => {
     // blur event will be triggered by the confirm pop-up which will start
     // infinite loop of blur -> confirm -> blur -> ...
     // so we trigger the blur event manually and have debounce mechanism to prevent it
@@ -279,7 +277,7 @@ export class Comment extends Component<Props, State> {
     this.props.setReplyEditState!({ id: this.props.data.id, state: CommentMode.None });
   };
 
-  scrollToParent = (e: Event) => {
+  scrollToParent = (e: BaseSyntheticEvent) => {
     const {
       data: { pid },
     } = this.props;
@@ -305,7 +303,7 @@ export class Comment extends Component<Props, State> {
   copyComment = () => {
     const username = this.props.data.user.name;
     const time = this.props.data.time;
-    const text = this.textNode!.textContent || '';
+    const text = this.textNode.current!.textContent || '';
 
     copy(`<b>${username}</b>&nbsp;${time}<br>${text.replace(/\n+/g, '<br>')}`);
 
@@ -387,16 +385,18 @@ export class Comment extends Component<Props, State> {
     if (isAdmin) {
       controls.push(
         this.state.isCopied ? (
-          <span className="comment__control comment__control_view_inactive">Copied!</span>
+          <span className="comment__control comment__control_view_inactive" key="comment-control-copied">
+            Copied!
+          </span>
         ) : (
-          <span {...getHandleClickProps(this.copyComment)} className="comment__control">
+          <span {...getHandleClickProps(this.copyComment)} className="comment__control" key="comment-control-copy">
             Copy
           </span>
         )
       );
 
       controls.push(
-        <span {...getHandleClickProps(this.togglePin)} className="comment__control">
+        <span {...getHandleClickProps(this.togglePin)} className="comment__control" key="comment-control-pin">
           {this.props.data.pin ? 'Unpin' : 'Pin'}
         </span>
       );
@@ -404,7 +404,7 @@ export class Comment extends Component<Props, State> {
 
     if (!isCurrentUser) {
       controls.push(
-        <span {...getHandleClickProps(this.hideUser)} className="comment__control">
+        <span {...getHandleClickProps(this.hideUser)} className="comment__control" key="comment-control-hide">
           Hide
         </span>
       );
@@ -413,7 +413,11 @@ export class Comment extends Component<Props, State> {
     if (isAdmin) {
       if (this.props.isUserBanned) {
         controls.push(
-          <span {...getHandleClickProps(this.onUnblockUserClick)} className="comment__control">
+          <span
+            {...getHandleClickProps(this.onUnblockUserClick)}
+            className="comment__control"
+            key="comment-control-unblock"
+          >
             Unblock
           </span>
         );
@@ -421,15 +425,22 @@ export class Comment extends Component<Props, State> {
 
       if (this.props.user!.id !== this.props.data.user.id && !this.props.isUserBanned) {
         controls.push(
-          <span className="comment__control comment__control_select-label">
+          <span className="comment__control comment__control_select-label" key="comment-control-block">
             Block
-            <select className="comment__control_select" onBlur={this.onBlockUserClick} onChange={this.onBlockUserClick}>
-              <option disabled selected value={undefined}>
+            <select
+              className="comment__control_select"
+              onBlur={this.onBlockUserClick}
+              onChange={this.onBlockUserClick}
+              value={undefined}
+            >
+              <option disabled value={undefined} key="blocking-duration-none">
                 {' '}
                 Blocking period{' '}
               </option>
               {BLOCKING_DURATIONS.map(block => (
-                <option value={block.value}>{block.label}</option>
+                <option key={`blocking-duration-${block.label}`} value={block.value}>
+                  {block.label}
+                </option>
               ))}
             </select>
           </span>
@@ -438,7 +449,7 @@ export class Comment extends Component<Props, State> {
 
       if (!this.props.data.delete) {
         controls.push(
-          <span {...getHandleClickProps(this.deleteComment)} className="comment__control">
+          <span {...getHandleClickProps(this.deleteComment)} className="comment__control" key="comment-control-delete">
             Delete
           </span>
         );
@@ -447,7 +458,9 @@ export class Comment extends Component<Props, State> {
     return controls;
   };
 
-  render(props: RenderableProps<Props>, state: State) {
+  render() {
+    const props = this.props;
+    const state = this.state;
     const isAdmin = this.isAdmin();
     const isGuest = this.isGuest();
     const isCurrentUser = this.isCurrentUser();
@@ -547,7 +560,9 @@ export class Comment extends Component<Props, State> {
     }
 
     if (!props.editMode && this.props.inView === false) {
-      const [width, height] = this.base ? [this.base.scrollWidth, this.base.scrollHeight] : [100, 100];
+      const [width, height] = this.rootNode.current!
+        ? [this.rootNode.current!.scrollWidth, this.rootNode.current!.scrollHeight]
+        : [100, 100];
       return (
         <article
           id={props.disabled ? undefined : `${COMMENT_NODE_CLASSNAME_PREFIX}${o.id}`}
@@ -563,6 +578,7 @@ export class Comment extends Component<Props, State> {
       <article
         className={b('comment', { mix: this.props.mix }, defaultMods)}
         id={props.disabled ? undefined : `${COMMENT_NODE_CLASSNAME_PREFIX}${o.id}`}
+        ref={this.rootNode}
       >
         {props.view === 'user' && o.title && (
           <div className="comment__title">
@@ -670,7 +686,7 @@ export class Comment extends Component<Props, State> {
           {(!props.collapsed || props.view === 'pinned') && (
             <div
               className={b('comment__text', { mix: b('raw-content', {}, { theme: props.theme }) })}
-              ref={r => (this.textNode = r)}
+              ref={this.textNode}
               dangerouslySetInnerHTML={{ __html: o.text }}
             />
           )}

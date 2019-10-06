@@ -2,9 +2,9 @@ import 'jest-extended';
 import 'jest-enzyme';
 import { StaticStore } from '@app/common/static_store';
 import { configure } from 'enzyme';
-import PreactAdapter from 'enzyme-adapter-preact-pure';
+import ReactAdapter from 'enzyme-adapter-react-16';
 
-configure({ adapter: new PreactAdapter() });
+configure({ adapter: new ReactAdapter() });
 
 require('document-register-element/pony')(window);
 

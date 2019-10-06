@@ -1,5 +1,5 @@
-/** @jsx h */
-import { h, Component, RenderableProps } from 'preact';
+/** @jsx createElement */
+import { createElement, Component } from 'react';
 import b from 'bem-react-helper';
 
 import { User, BlockedUser, Theme, BlockTTL } from '@app/common/types';
@@ -29,7 +29,7 @@ interface State {
   unhiddenUsers: (User['id'])[];
 }
 
-export default class BlockedUsers extends Component<Props, State> {
+export default class Settings extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
 
@@ -74,7 +74,9 @@ export default class BlockedUsers extends Component<Props, State> {
     return false;
   };
 
-  render({ user, theme }: RenderableProps<Props>, { blockedUsers, unblockedUsers, unhiddenUsers }: State) {
+  render() {
+    const { user, theme } = this.props;
+    const { blockedUsers, unblockedUsers, unhiddenUsers } = this.state;
     const hiddenUsersList = Object.values(this.state.hiddenUsers);
     return (
       <div className={b('settings', {}, { theme })}>
@@ -126,7 +128,7 @@ export default class BlockedUsers extends Component<Props, State> {
                   const isUserUnblocked = unblockedUsers.includes(user.id);
 
                   return (
-                    <li className="settings__list-item">
+                    <li className="settings__list-item" key={`blocked-user-${user.id}`}>
                       <span
                         className={['settings__username', isUserUnblocked ? 'settings__invisible' : null].join(' ')}
                         title={user.id}

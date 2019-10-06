@@ -1,10 +1,19 @@
-/** @jsx h */
+/** @jsx createElement */
 
 /* styles imports */
 import '@app/components/raw-content';
 import './styles';
 
-import { h, Component, RenderableProps } from 'preact';
+import {
+  createElement,
+  Component,
+  createRef,
+  FormEvent,
+  DragEvent,
+  KeyboardEvent,
+  BaseSyntheticEvent,
+  ClipboardEvent,
+} from 'react';
 import b, { Mix } from 'bem-react-helper';
 
 import { User, Theme, Image, ApiError } from '@app/common/types';
@@ -66,8 +75,9 @@ const ImageMimeRegex = /image\//i;
 
 export class Input extends Component<Props, State> {
   /** reference to textarea element */
-  textAreaRef?: TextareaAutosize;
+  textAreaRef = createRef<TextareaAutosize>();
   textareaId: string;
+
   constructor(props: Props) {
     super(props);
     textareaId = textareaId + 1;
@@ -98,7 +108,7 @@ export class Input extends Component<Props, State> {
   componentWillReceiveProps(nextProps: Props) {
     if (nextProps.value !== this.props.value) {
       this.setState({ text: nextProps.value || '' });
-      this.props.autofocus && this.textAreaRef && this.textAreaRef.focus();
+      this.props.autofocus && this.textAreaRef.current && this.textAreaRef.current.focus();
     }
   }
 
@@ -120,7 +130,7 @@ export class Input extends Component<Props, State> {
     }
   }
 
-  onInput(e: Event) {
+  onInput(e: FormEvent<HTMLTextAreaElement>) {
     if (this.state.errorLock) {
       this.setState({
         preview: null,
@@ -145,7 +155,7 @@ export class Input extends Component<Props, State> {
     await this.uploadImages(files);
   }
 
-  send(e: Event) {
+  send(e: BaseSyntheticEvent) {
     const text = this.state.text;
     const props = this.props;
 
@@ -203,7 +213,7 @@ export class Input extends Component<Props, State> {
     });
   }
 
-  onDragOver(e: DragEvent) {
+  onDragOver(e: DragEvent<HTMLFormElement>) {
     if (!this.props.uploadImage) return;
     if (StaticStore.config.max_image_size === 0) return;
     if (!this.textAreaRef) return;
@@ -214,7 +224,7 @@ export class Input extends Component<Props, State> {
     e.dataTransfer.dropEffect = 'copy';
   }
 
-  onDrop(e: DragEvent) {
+  onDrop(e: DragEvent<HTMLFormElement>) {
     if (!this.props.uploadImage) return;
     if (StaticStore.config.max_image_size === 0) return;
     if (!e.dataTransfer) return;
@@ -242,14 +252,14 @@ export class Input extends Component<Props, State> {
   /** performs upload process */
   async uploadImages(files: File[]) {
     if (!this.props.uploadImage) return;
-    if (!this.textAreaRef) return;
+    if (!this.textAreaRef.current) return;
 
     /** Human readable image size limit, i.e 5MB */
     const maxImageSizeString = (StaticStore.config.max_image_size / 1024 / 1024).toFixed(2) + 'MB';
     /** upload delay to avoid server rate limiter */
     const uploadDelay = 5000;
 
-    const isSelectionSupported = this.textAreaRef.isSelectionSupported();
+    const isSelectionSupported = this.textAreaRef.current.isSelectionSupported();
 
     this.setState({
       errorLock: true,
@@ -297,7 +307,7 @@ export class Input extends Component<Props, State> {
 
       const uploadPlaceholder = `${placeholderStart}![uploading ${file.name}...]()`;
       const uploadPlaceholderLength = uploadPlaceholder.length;
-      const selection = this.textAreaRef.getSelection();
+      const selection = this.textAreaRef.current.getSelection();
       /** saved selection in case of error */
       const originalText = this.state.text;
       const restoreSelection = async () => {
@@ -306,7 +316,7 @@ export class Input extends Component<Props, State> {
         });
         /** sleeping awhile so textarea catch state change and its selection */
         await sleep(100);
-        this.textAreaRef!.setSelection(selection);
+        this.textAreaRef.current!.setSelection(selection);
       };
 
       if (file.size > StaticStore.config.max_image_size) {
@@ -335,18 +345,25 @@ export class Input extends Component<Props, State> {
       /** sleeping awhile so textarea catch state change and its selection */
       await sleep(100);
       const selectionPointer = selection[0] + markdownString.length;
-      this.textAreaRef.setSelection([selectionPointer, selectionPointer]);
+      this.textAreaRef.current.setSelection([selectionPointer, selectionPointer]);
     }
 
     this.setState({ errorLock: false, isDisabled: false, buttonText: null });
   }
 
-  render(
-    props: RenderableProps<Props>,
-    { isDisabled, isErrorShown, errorMessage, preview, maxLength, text, buttonText }: State
-  ) {
+  render() {
+    const props = this.props;
+    const {
+      isDisabled,
+      isErrorShown,
+      errorMessage: stateErrorMessage,
+      preview,
+      maxLength,
+      text,
+      buttonText,
+    } = this.state;
     const charactersLeft = maxLength - text.length;
-    errorMessage = props.errorMessage || errorMessage;
+    const errorMessage = props.errorMessage || stateErrorMessage;
     const label = buttonText || Labels[props.mode || 'main'];
 
     return (
@@ -374,16 +391,16 @@ export class Input extends Component<Props, State> {
           <TextareaAutosize
             id={this.textareaId}
             onPaste={this.onPaste}
-            ref={ref => (this.textAreaRef = ref)}
+            ref={this.textAreaRef}
             className="input__field"
             placeholder="Your comment here"
             value={text}
             maxLength={maxLength}
-            onInput={this.onInput}
+            onChange={this.onInput}
             onKeyDown={this.onKeyDown}
             disabled={isDisabled}
-            autofocus={!!props.autofocus}
-            spellcheck={true}
+            autoFocus={!!props.autofocus}
+            spellCheck={true}
           />
 
           {charactersLeft < 100 && <span className="input__counter">{charactersLeft}</span>}
@@ -412,7 +429,7 @@ export class Input extends Component<Props, State> {
 
           {props.mode === 'main' && (
             <div className="input__rss">
-              <div class="input__markdown">
+              <div className="input__markdown">
                 Styling with{' '}
                 <a className="input__markdown-link" target="_blank" href="markdown-help.html">
                   Markdown

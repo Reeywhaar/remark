@@ -1,9 +1,7 @@
-/** @jsx h */
-import { h, Component, RenderableProps } from 'preact';
+/** @jsx createElement */
+import { createElement, Component, ComponentProps } from 'react';
 
-type Props = JSX.HTMLAttributes & {
-  autofocus: boolean;
-};
+type Props = Omit<ComponentProps<'textarea'>, 'ref'>;
 
 export default class TextareaAutosize extends Component<Props> {
   textareaRef?: HTMLTextAreaElement;
@@ -17,7 +15,7 @@ export default class TextareaAutosize extends Component<Props> {
   componentDidMount() {
     this.autoResize();
 
-    if (this.props.autofocus) this.focus();
+    if (this.props.autoFocus) this.focus();
   }
 
   componentDidUpdate(prevProps: Props) {
@@ -65,12 +63,13 @@ export default class TextareaAutosize extends Component<Props> {
       this.textareaRef.style.height = `${this.textareaRef.scrollHeight}px`;
     }
   }
-  render(props: RenderableProps<Props>) {
+  render() {
+    const { autoFocus, ...props } = this.props;
     return (
       // We set text as a child of textarea and not in value property for a reason.
       // It's a workaround for the bug described here https://github.com/developit/preact/issues/326
       <textarea {...props} ref={this.onRef}>
-        {props.value}
+        {this.props.value}
       </textarea>
     );
   }

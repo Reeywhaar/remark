@@ -1,6 +1,6 @@
-/** @jsx h */
-import { h, RenderableProps } from 'preact';
-import { connect } from 'preact-redux';
+/** @jsx createElement */
+import { createElement, FunctionComponent } from 'react';
+import { connect } from 'react-redux';
 import b from 'bem-react-helper';
 
 import { ConnectedComment as Comment } from '@app/components/comment/connected-comment';
@@ -29,9 +29,7 @@ type Props = {
   getPreview(text: string): Promise<string>;
 } & ReturnType<typeof mapStateToProps>;
 
-function Thread(props: RenderableProps<Props>) {
-  const { collapsed, comment, childs, level, theme } = props;
-
+const Thread: FunctionComponent<Props> = ({ collapsed, comment, childs, level, theme, ...props }) => {
   if (comment.hidden) return null;
 
   const indented = level > 0;
@@ -46,7 +44,7 @@ function Thread(props: RenderableProps<Props>) {
       <InView>
         {inviewProps => (
           <Comment
-            ref={ref => inviewProps.ref(ref)}
+            ref={ref => ref && inviewProps.ref(ref)}
             key={`comment-${props.id}`}
             view="main"
             data={comment}
@@ -65,6 +63,6 @@ function Thread(props: RenderableProps<Props>) {
         ))}
     </div>
   );
-}
+};
 
 export const ConnectedThread = connect(mapStateToProps)(Thread);

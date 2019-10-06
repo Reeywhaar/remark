@@ -1,5 +1,5 @@
-/** @jsx h */
-import { h, Component, RenderableProps } from 'preact';
+/** @jsx createElement */
+import { createElement, Component, FormEvent, ChangeEvent } from 'react';
 import b from 'bem-react-helper';
 import { Theme } from '@app/common/types';
 
@@ -17,7 +17,7 @@ interface State {
 export class AnonymousLoginForm extends Component<Props, State> {
   static usernameRegex = /^[a-zA-Z][\w ]+$/;
 
-  inputRef?: HTMLInputElement;
+  inputRef: HTMLInputElement | null = null;
 
   constructor(props: Props) {
     super(props);
@@ -32,7 +32,7 @@ export class AnonymousLoginForm extends Component<Props, State> {
     this.onCheckedChange = this.onCheckedChange.bind(this);
   }
 
-  onSubmit(e: Event) {
+  onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (this.state.honeyPotValue) {
       // what should i do if bot uncovered?
@@ -42,7 +42,7 @@ export class AnonymousLoginForm extends Component<Props, State> {
     this.props.onSubmit(this.state.inputValue);
   }
 
-  onChange(e: Event) {
+  onChange(e: FormEvent<HTMLInputElement>) {
     this.setState({ inputValue: (e.target as HTMLInputElement).value });
   }
 
@@ -54,7 +54,7 @@ export class AnonymousLoginForm extends Component<Props, State> {
     return null;
   }
 
-  onCheckedChange(e: Event) {
+  onCheckedChange(e: ChangeEvent<HTMLInputElement>) {
     this.setState({ honeyPotValue: (e.target as HTMLInputElement).checked });
   }
 
@@ -64,7 +64,9 @@ export class AnonymousLoginForm extends Component<Props, State> {
     }, 100);
   }
 
-  render(props: RenderableProps<Props>) {
+  render() {
+    const props = this.props;
+
     // TODO: will be great to `b` to accept `string | undefined | (string|undefined)[]` as classname
     let className = b('auth-panel-anonymous-login-form', {}, { theme: props.theme });
     if (props.className) {
@@ -81,21 +83,21 @@ export class AnonymousLoginForm extends Component<Props, State> {
           type="text"
           placeholder="Username"
           value={this.state.inputValue}
-          onInput={this.onChange}
+          onChange={this.onChange}
         />
         {/* honeypot input */}
         <input
           className="auth-panel-anonymous-login-form__remember-me"
           type="checkbox"
           tabIndex={-1}
-          autocomplete="off"
+          autoComplete="off"
           onChange={this.onCheckedChange}
           checked={this.state.honeyPotValue}
         />
         <input
           className="auth-panel-anonymous-login-form__submit"
           type="submit"
-          value="Log in"
+          defaultValue="Log in"
           title={usernameInvalidReason || ''}
           disabled={usernameInvalidReason !== null}
         />

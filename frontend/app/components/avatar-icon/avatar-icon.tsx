@@ -1,5 +1,5 @@
-/** @jsx h */
-import { h } from 'preact';
+/** @jsx createElement */
+import { createElement, FunctionComponent } from 'react';
 import b from 'bem-react-helper';
 import { Theme } from '@app/common/types';
 
@@ -9,12 +9,12 @@ interface Props {
   theme?: Theme;
 }
 
-export function AvatarIcon(props: Props & JSX.HTMLAttributes) {
+export const AvatarIcon: FunctionComponent<Props> = ({ mix, theme, picture }) => {
   return (
     <img
-      className={b('avatar-icon', { mix: props.mix }, { theme: props.theme, default: !props.picture })}
-      src={props.picture || require('./avatar-icon.svg')}
+      className={b('avatar-icon', { mix: mix }, { theme: theme, default: !picture })}
+      src={picture || require('./avatar-icon.svg')}
       alt=""
     />
   );
-}
+};

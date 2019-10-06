@@ -1,12 +1,17 @@
-/** @jsx h */
-import { h } from 'preact';
+/** @jsx createElement */
+import { createElement, FunctionComponent } from 'react';
 
 import { Comment as CommentType } from '@app/common/types';
 
 import { Comment } from '../comment';
 import Preloader from '../preloader';
 
-const LastCommentsList = ({ comments, isLoading }: { comments: CommentType[]; isLoading: boolean }) => {
+interface Props {
+  comments: CommentType[];
+  isLoading: boolean;
+}
+
+const LastCommentsList: FunctionComponent<Props> = ({ comments, isLoading }) => {
   if (isLoading) {
     return <Preloader mix="user-info__preloader" />;
   }
@@ -15,6 +20,7 @@ const LastCommentsList = ({ comments, isLoading }: { comments: CommentType[]; is
     <div>
       {comments.map(comment => (
         <Comment
+          key={`comment-${comment.id}`}
           data={comment}
           level={0}
           view="user"

@@ -1,3 +1,5 @@
+import { KeyboardEvent, MouseEvent } from 'react';
+
 const handleBtnKeyPress = (event: KeyboardEvent, handler?: (e: KeyboardEvent | MouseEvent) => void) => {
   if (event.key === ' ' || event.key === 'Enter') {
     event.preventDefault();

@@ -1,11 +1,11 @@
-/** @jsx h */
-import { Component, h, RenderableProps } from 'preact';
+/** @jsx createElement */
+import { createElement, Component, FocusEvent, ComponentProps } from 'react';
 import b from 'bem-react-helper';
 
 import noop from '@app/utils/noop';
 import { Theme } from '@app/common/types';
 
-interface Props {
+type Props = {
   type?: string;
   kind?: string;
   theme: Theme;
@@ -14,14 +14,21 @@ interface Props {
   onClick?: (e: MouseEvent) => void;
   onFocus?: (e: FocusEvent) => void;
   onBlur?: (e: FocusEvent) => void;
-}
+} & ComponentProps<'button'>;
 
 interface State {
   isClicked: boolean;
   isFocused: boolean;
 }
 
-export class Button extends Component<JSX.HTMLAttributes & Props, State> {
+export class Button extends Component<Props, State> {
+  static defaultProps = {
+    type: 'button',
+    onClick: noop,
+    onBlur: noop,
+    onFocus: noop,
+  };
+
   constructor(props: Props) {
     super(props);
 
@@ -45,7 +52,7 @@ export class Button extends Component<JSX.HTMLAttributes & Props, State> {
     this.props.onClick!(e);
   }
 
-  onBlur(e: FocusEvent) {
+  onBlur(e: FocusEvent<HTMLButtonElement>) {
     this.setState({
       isClicked: false,
       isFocused: false,
@@ -54,7 +61,7 @@ export class Button extends Component<JSX.HTMLAttributes & Props, State> {
     this.props.onBlur!(e);
   }
 
-  onFocus(e: FocusEvent) {
+  onFocus(e: FocusEvent<HTMLButtonElement>) {
     this.setState({
       isFocused: true,
     });
@@ -62,26 +69,21 @@ export class Button extends Component<JSX.HTMLAttributes & Props, State> {
     this.props.onFocus!(e);
   }
 
-  render(props: RenderableProps<JSX.HTMLAttributes & Props>, state: State) {
-    const { children, className } = props;
-    const { isClicked, isFocused } = state;
+  render() {
+    const { children, className, mix, theme, type, kind } = this.props;
+    const { isClicked, isFocused } = this.state;
 
     let rclassName = b(
       'button',
-      { mix: props.mix },
-      { theme: props.theme, type: props.type, kind: props.kind, clicked: isClicked, focused: isFocused }
+      { mix: mix },
+      { theme: theme, type: type, kind: kind, clicked: isClicked, focused: isFocused }
     );
     if (className) {
       rclassName +=
-        ' ' +
-        b(
-          className,
-          {},
-          { theme: props.theme, type: props.type, kind: props.kind, clicked: isClicked, focused: isFocused }
-        );
+        ' ' + b(className, {}, { theme: theme, type: type, kind: kind, clicked: isClicked, focused: isFocused });
     }
 
-    const localProps = { ...props };
+    const localProps = { ...this.props };
     delete localProps.children;
     delete localProps.mix;
 
@@ -98,10 +100,3 @@ export class Button extends Component<JSX.HTMLAttributes & Props, State> {
     );
   }
 }
-
-Button.defaultProps = {
-  type: 'button',
-  onClick: noop,
-  onBlur: noop,
-  onFocus: noop,
-};

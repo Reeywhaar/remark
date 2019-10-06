@@ -1,9 +1,9 @@
-/** @jsx h */
-import { h, Component, RenderableProps } from 'preact';
+/** @jsx createElement */
+import { createElement, Component } from 'react';
 import b from 'bem-react-helper';
-import { connect } from 'preact-redux';
+import { connect } from 'react-redux';
 
-import { StoreState, StoreDispatch } from '@app/store';
+import { StoreState } from '@app/store';
 import { Comment } from '@app/common/types';
 import { fetchInfo } from '@app/store/user-info/actions';
 import { userInfo } from '@app/common/user-info-settings';
@@ -11,11 +11,13 @@ import { userInfo } from '@app/common/user-info-settings';
 import LastCommentsList from './last-comments-list';
 import { AvatarIcon } from '../avatar-icon';
 import postMessage from '@app/utils/postMessage';
+import { bindActions } from '@app/utils/actionBinder';
 
-interface Props {
+const boundActions = bindActions({ fetchInfo });
+
+type Props = {
   comments: Comment[] | null;
-  fetchInfo: () => Promise<Comment[] | null>;
-}
+} & typeof boundActions;
 
 interface State {
   isLoading: boolean;
@@ -44,9 +46,10 @@ class UserInfo extends Component<Props, State> {
     document.removeEventListener('keydown', UserInfo.onKeyDown);
   }
 
-  render(props: RenderableProps<Props>, state: State): JSX.Element | null {
+  render() {
     const user = userInfo;
-    const { comments = [] } = props;
+    const { comments = [] } = this.props;
+    const state = this.state;
 
     // TODO: handle
     if (!user) {
@@ -76,10 +79,6 @@ class UserInfo extends Component<Props, State> {
   }
 }
 
-const mapDispatchToProps = (dispatch: StoreDispatch) => ({
-  fetchInfo: () => dispatch(fetchInfo()),
-});
-
 export const ConnectedUserInfo = connect(
   (
     state: StoreState
@@ -88,5 +87,5 @@ export const ConnectedUserInfo = connect(
   } => ({
     comments: state.userComments![userInfo.id!],
   }),
-  mapDispatchToProps
+  boundActions
 )(UserInfo);
